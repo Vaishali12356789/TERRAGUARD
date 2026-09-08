@@ -18,7 +18,7 @@ export default function App() {
   const [dispatchStatus, setDispatchStatus] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/hotspots')
+    fetch('https://terraguard-etyf.onrender.com](https://terraguard-etyf.onrender.com/api/hotspots')
       .then((res) => res.json())
       .then((data) => setHotspots(data))
       .catch((err) => console.error('Error fetching backend data:', err));
@@ -27,7 +27,7 @@ export default function App() {
   const handleParse = async () => {
     if (!inputText) return;
     try {
-      const res = await fetch('http://localhost:5000/api/parse-nlp', {
+      const res = await fetch('https://terraguard-etyf.onrender.com](https://terraguard-etyf.onrender.com/api/parse-nlp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputText }),
