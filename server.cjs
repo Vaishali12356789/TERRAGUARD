@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
+app.get('/', (req, res) => {
+  res.send("TerraGuard Backend is Live!");
+});
 app.use(cors());
 app.use(express.json());
 
