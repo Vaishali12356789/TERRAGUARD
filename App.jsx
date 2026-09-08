@@ -18,7 +18,7 @@ export default function App() {
   const [dispatchStatus, setDispatchStatus] = useState(null);
 
   useEffect(() => {
-    fetch('https://terraguard-etyf.onrender.com](https://terraguard-etyf.onrender.com/api/hotspots')
+    fetch('https://terraguard-etyf.onrender.com/api/hotspots')
       .then((res) => res.json())
       .then((data) => setHotspots(data))
       .catch((err) => console.error('Error fetching backend data:', err));
@@ -27,7 +27,7 @@ export default function App() {
   const handleParse = async () => {
     if (!inputText) return;
     try {
-      const res = await fetch('https://terraguard-etyf.onrender.com](https://terraguard-etyf.onrender.com/api/parse-nlp', {
+      const res = await fetch('https://terraguard-etyf.onrender.com/api/parse-nlp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputText }),
@@ -95,8 +95,8 @@ export default function App() {
               <div style={{ height: '520px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '1px solid #334155' }}>
                 <MapContainer center={[26.2006, 92.9376]} zoom={6} style={{ height: '100%', width: '100%' }}>
                   <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
                   {hotspots.map((h) => (
                     <Marker key={h.id} position={[h.lat, h.lng]}>
