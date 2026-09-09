@@ -9,14 +9,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Expanded mock hotspots list
 const initialHotspots = [
-  { id: 1, state: 'Sikkim', location: 'Teesta Valley NH-10', lat: 27.3389, lng: 88.6065, risk: 'CRITICAL', threat: 'Major Landslide & Road Blockage', moisture: '92%', rain: '140mm' },
-  { id: 2, state: 'Assam', location: 'Guwahati Zoo Road', lat: 26.1445, lng: 91.7362, risk: 'HIGH', threat: 'Urban Flash Flood Hazard', moisture: '85%', rain: '95mm' },
-  { id: 3, state: 'Meghalaya', location: 'Cherrapunji Bypass', lat: 25.2986, lng: 91.7321, risk: 'MEDIUM', threat: 'Soil Erosion & Slope Instability', moisture: '74%', rain: '60mm' },
-  { id: 4, state: 'Arunachal Pradesh', location: 'Itanagar Highway', lat: 27.0844, lng: 93.6053, risk: 'HIGH', threat: 'Mudslide & Falling Rocks', moisture: '88%', rain: '110mm' },
-  { id: 5, state: 'Nagaland', location: 'Kohima Bypass Road', lat: 25.6751, lng: 94.1086, risk: 'MEDIUM', threat: 'Minor Landslide Activity', moisture: '68%', rain: '45mm' },
-  { id: 6, state: 'Manipur', location: 'Imphal West Highway', lat: 24.8170, lng: 93.9368, risk: 'CRITICAL', threat: 'River Overflow & Inundation', moisture: '95%', rain: '160mm' }
+  { id: 1, state: 'Sikkim', location: 'Teesta River Valley (NH-10)', lat: 27.3389, lng: 88.6065, risk: 'CRITICAL', threat: 'Major Landslide & Road Blockage', moisture: '92%', rain: '140mm', criticalHours: '0 - 8 Hours', normalTime: 'After 36 Hours' },
+  { id: 2, state: 'Assam', location: 'Guwahati Zoo Road', lat: 26.1445, lng: 91.7362, risk: 'HIGH', threat: 'Urban Flash Flood Hazard', moisture: '85%', rain: '95mm', criticalHours: '0 - 5 Hours', normalTime: 'After 24 Hours' },
+  { id: 3, state: 'Meghalaya', location: 'Cherrapunji Bypass', lat: 25.2986, lng: 91.7321, risk: 'MEDIUM', threat: 'Soil Erosion & Slope Instability', moisture: '74%', rain: '60mm', criticalHours: '0 - 3 Hours', normalTime: 'After 18 Hours' },
+  { id: 4, state: 'Arunachal Pradesh', location: 'Itanagar Highway', lat: 27.0844, lng: 93.6053, risk: 'HIGH', threat: 'Mudslide & Falling Rocks', moisture: '88%', rain: '110mm', criticalHours: '0 - 6 Hours', normalTime: 'After 24 Hours' },
+  { id: 5, state: 'Nagaland', location: 'Kohima Bypass Road', lat: 25.6751, lng: 94.1086, risk: 'MEDIUM', threat: 'Minor Landslide Activity', moisture: '68%', rain: '45mm', criticalHours: '0 - 2 Hours', normalTime: 'After 12 Hours' },
+  { id: 6, state: 'Manipur', location: 'Imphal West Highway', lat: 24.8170, lng: 93.9368, risk: 'CRITICAL', threat: 'River Overflow & Inundation', moisture: '95%', rain: '160mm', criticalHours: '0 - 10 Hours', normalTime: 'After 48 Hours' }
 ];
 
 export default function App() {
@@ -44,68 +43,69 @@ export default function App() {
       .catch((err) => console.error('Error fetching backend data:', err));
   }, []);
 
-  // Dynamic Incident Logic Engine
   const analyzeIncident = (whereInput, whenInput, whatInput) => {
     const text = (whatInput || '').toLowerCase();
+    const queryTime = new Date().toLocaleTimeString();
     
     let calculatedRisk = 'MEDIUM';
     let dynamicTimeline = {
-      criticalUntil: 'Next 0 to 3 Hours',
-      mediumUntil: '3 to 12 Hours',
-      normalBy: 'After 18 Hours'
+      searchTime: queryTime,
+      criticalUntil: '0 to 3 Hours (Immediate Action)',
+      mediumUntil: '3 to 12 Hours (Stabilization Phase)',
+      normalBy: 'After 18 Hours (Safe Return Expected)'
     };
     let dynamicPrecautions = [];
 
-    // Critical condition matching
     if (text.includes('block') || text.includes('landslide') || text.includes('flood') || text.includes('cloudburst') || text.includes('overflow')) {
       calculatedRisk = 'CRITICAL';
       dynamicTimeline = {
-        criticalUntil: 'Next 0 to 8 Hours (Immediate Active Hazard)',
-        mediumUntil: '8 to 24 Hours (Clearing & Stabilizing)',
-        normalBy: 'After 36 Hours (Full Operations)'
+        searchTime: queryTime,
+        criticalUntil: 'Next 0 to 8 Hours (High Threat / Severe Hazard)',
+        mediumUntil: '8 to 24 Hours (Clearing & Emergency Work)',
+        normalBy: 'After 36 Hours (Full Normalcy Restored)'
       };
     } else if (text.includes('rain') || text.includes('crack') || text.includes('mud') || text.includes('water')) {
       calculatedRisk = 'HIGH';
       dynamicTimeline = {
-        criticalUntil: 'Next 0 to 5 Hours (High Caution Required)',
-        mediumUntil: '5 to 16 Hours (Monitoring Phase)',
-        normalBy: 'After 24 Hours (Expected Normalcy)'
+        searchTime: queryTime,
+        criticalUntil: 'Next 0 to 5 Hours (Caution Required)',
+        mediumUntil: '5 to 16 Hours (Active Monitoring)',
+        normalBy: 'After 24 Hours (Safe Return Expected)'
       };
     }
 
-    // Dynamic Precautions based on keywords
     if (text.includes('block') || text.includes('landslide') || text.includes('road')) {
       dynamicPrecautions = [
-        'Dispatch heavy earthmovers (JCB/Bulldozers) to clear highway debris.',
-        'Issue immediate traffic diversion advisory for all heavy & commercial vehicles.',
-        'Deploy Highway Patrol & BRO personnel to secure landslide periphery.',
-        'Set up emergency transit tents for stranded commuters.'
+        'Deploy heavy JCB/Bulldozers for highway clearing.',
+        'Divert commercial traffic via alternate state roads.',
+        'Station BRO patrol units near high-risk slopes.',
+        'Set up emergency transit tents for commuters.'
       ];
     } else if (text.includes('flood') || text.includes('overflow') || text.includes('water') || text.includes('river')) {
       dynamicPrecautions = [
-        'Deploy NDRF inflatable rescue motorboats along low-lying riverbanks.',
-        'Issue high-decibel Siren Siren alarms for immediate local evacuation.',
-        'Distribute purified drinking water and emergency dry ration packets.',
-        'Establish elevated relief camps equipped with emergency medical kits.'
+        'Deploy NDRF motorboats along riverbank settlements.',
+        'Trigger local siren alarms for immediate evacuation.',
+        'Distribute drinking water and emergency dry ration.',
+        'Setup high-ground relief camps with medical kits.'
       ];
     } else {
       dynamicPrecautions = [
-        'Maintain continuous satellite and ground sensor monitoring.',
-        'Alert local Disaster Response Force (SDRF) rapid deployment teams.',
-        'Keep emergency communication channels & VHF radios operational.',
-        'Advise citizens to restrict non-essential travel in the region.'
+        'Maintain continuous satellite and sensor telemetry.',
+        'Keep SDRF rapid deployment teams on standby.',
+        'Maintain open VHF communication lines.',
+        'Advise citizens against non-essential travel.'
       ];
     }
 
     return {
       id: Date.now(),
-      where: whereInput || 'Teesta River Zone, Sikkim',
-      when: whenInput || 'Current Live Report',
+      where: whereInput || 'Teesta Valley, Sikkim',
+      when: whenInput || 'Current Query Time',
       what: whatInput || 'Road blockage and severe weather incident',
       riskLevel: calculatedRisk,
       timeline: dynamicTimeline,
       precautions: dynamicPrecautions,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: queryTime
     };
   };
 
@@ -116,7 +116,6 @@ export default function App() {
     setSearchHistory([result, ...searchHistory]);
   };
 
-  // Quick Demo Auto-Fill Handlers
   const loadQuickScenario = (whereVal, whenVal, whatVal) => {
     setSearchWhere(whereVal);
     setSearchWhen(whenVal);
@@ -128,77 +127,69 @@ export default function App() {
 
   const handleDispatch = (e) => {
     e.preventDefault();
-    setDispatchStatus('Emergency SMS Alert Broadcasted to State Disaster Nodes & Hotlines successfully!');
+    setDispatchStatus('Emergency SMS Alert Broadcasted to Target Region Nodes!');
     setTimeout(() => setDispatchStatus(null), 4500);
   };
 
   const getRiskColor = (risk) => {
-    if (risk === 'CRITICAL') return '#dc2626'; // Red
-    if (risk === 'HIGH') return '#ea580c';     // Dark Orange
-    if (risk === 'MEDIUM') return '#eab308';   // Yellow/Amber
-    return '#16a34a';                          // Green
+    if (risk === 'CRITICAL') return '#dc2626';
+    if (risk === 'HIGH') return '#ea580c';
+    if (risk === 'MEDIUM') return '#eab308';
+    return '#16a34a';
   };
 
+  // DETAILED TIMELINE REPORT GENERATION
   const downloadTextReport = () => {
     const timestamp = new Date().toLocaleString();
-    
+
     let reportContent = `================================================================================
-               TERRAGUARD GIS PLATFORM - DISASTER ASSESSMENT REPORT
+               TERRAGUARD GIS PLATFORM - REGIONAL HAZARD REPORT
 ================================================================================
-Generated On       : ${timestamp}
-System Classification: SIH 26001 - Early Warning & Incident Monitoring System
-Target Region       : North Eastern Region (NER) Zone
-Issuing Authority   : NDRF & State Disaster Management Authority (SDMA) Node
+Generated On         : ${timestamp}
+System Classification: SIH 26001 - Early Warning & Disaster Assessment System
+Issuing Authority     : NDRF & State Disaster Management Authority (SDMA) Node
 ================================================================================
 
-1. EXECUTIVE SUMMARY
---------------------------------------------------------------------------------
-This document provides a comprehensive situation and telemetry risk analysis for 
-the monitored North Eastern Region zones. Real-time satellite imagery, ground-sensor
-hydrological telemetry, and public incident parsing have been synthesized to formulate
-this operational advisory.
-
-2. ACTIVE REGIONAL HAZARD ASSESSMENT
---------------------------------------------------------------------------------\n`;
-
-    hotspots.forEach((h, index) => {
-      reportContent += `[${index + 1}] LOCATION: ${h.location.toUpperCase()} (${h.state.toUpperCase()})
-    - Threat Classification : ${h.threat}
-    - Risk Level Assigned   : ${h.risk}
-    - Coordinates           : Lat ${h.lat}, Lng ${h.lng}
-    - Soil Moisture Level   : ${h.moisture}
-    - Recorded Rainfall     : ${h.rain}
---------------------------------------------------------------------------------\n`;
-    });
-
-    reportContent += `\n3. INCIDENT QUERY & PARSED AI THREAT SUMMARY
+1. SEARCH QUERY ASSESSMENT & HAZARD TIMELINE
 --------------------------------------------------------------------------------\n`;
 
     if (parsedData) {
-      reportContent += `Query Target Region  : ${parsedData.where}
-Query Timestamp      : ${parsedData.when}
-Incident Description : ${parsedData.what}
-Assessed Risk Status : ${parsedData.riskLevel}
+      reportContent += `Target Location / Region : ${parsedData.where.toUpperCase()}
+Query Search Time        : ${parsedData.timeline.searchTime}
+Event Occurrence Time    : ${parsedData.when}
+Incident Summary         : ${parsedData.what}
+Assessed Risk Level      : [ ${parsedData.riskLevel} ]
 
-STABILIZATION & HAZARD TIMELINE:
-  * Critical Window  : ${parsedData.timeline.criticalUntil}
-  * Moderate Window  : ${parsedData.timeline.mediumUntil}
-  * Expected Normalcy: ${parsedData.timeline.normalBy}
+DETAILED PHASED TIMELINE FOR SEARCHED REGION:
+  [1] 🔴 Critical Hazard Phase   : ${parsedData.timeline.criticalUntil}
+  [2] 🟡 Stabilization Phase     : ${parsedData.timeline.mediumUntil}
+  [3] 🟢 Normalization / Safe    : ${parsedData.timeline.normalBy}
 
-RECOMMENDED EMERGENCY PRECAUTIONS:
-${parsedData.precautions.map((p, idx) => `  (${idx + 1}) ${p}`).join('\n')}
+RECOMMENDED ACTIONABLE PRECAUTIONS:
+${parsedData.precautions.map((p, idx) => `  * ${idx + 1}. ${p}`).join('\n')}
 --------------------------------------------------------------------------------\n`;
     } else {
-      reportContent += `No active incident search queries recorded for this session.
---------------------------------------------------------------------------------\n`;
+      reportContent += `No active region query filtered. Showing all active monitored zones below.\n\n`;
     }
 
-    reportContent += `\n4. EMERGENCY DIRECTORY & STANDARD OPERATING PROCEDURES
+    reportContent += `2. ALL MONITORED REGIONS HAZARD & RECOVERY TIMELINES
+--------------------------------------------------------------------------------\n`;
+
+    hotspots.forEach((h, index) => {
+      reportContent += `[${index + 1}] REGION / LOCATION: ${h.location.toUpperCase()} (${h.state.toUpperCase()})
+    - Threat Type            : ${h.threat}
+    - Current Risk Severity  : ${h.risk}
+    - 🔴 Critical Window     : ${h.criticalHours}
+    - 🟢 Safe Normalization  : ${h.normalTime}
+    - Telemetry Metrics      : Soil Moisture ${h.moisture} | Rain ${h.rain}
+--------------------------------------------------------------------------------\n`;
+    });
+
+    reportContent += `\n3. EMERGENCY DIRECTORY
 --------------------------------------------------------------------------------
-PRIMARY CONTACT HELPLINES:
-  - NDRF Control Room           : 011-24363260 / +91-9711077372
-  - State Disaster Response     : 1070 / 1077
-  - Emergency Central Helpline  : 112
+  - NDRF Central Control Room : 011-24363260 / +91-9711077372
+  - State Emergency Helpline  : 1070 / 1077
+  - Emergency Central Desk    : 112
 
 ================================================================================
                              END OF OFFICIAL ADVISORY
@@ -208,7 +199,7 @@ PRIMARY CONTACT HELPLINES:
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `TerraGuard_Official_Report_${Date.now()}.txt`;
+    a.download = `TerraGuard_Disaster_Timeline_Report_${Date.now()}.txt`;
     a.click();
   };
 
@@ -253,7 +244,7 @@ PRIMARY CONTACT HELPLINES:
                 <MapContainer center={[26.2006, 92.9376]} zoom={6} style={{ height: '100%', width: '100%' }}>
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    attribution='&copy; OpenStreetMap contributors'
                   />
                   {hotspots.map((h) => (
                     <Marker key={h.id} position={[h.lat, h.lng]}>
@@ -262,7 +253,7 @@ PRIMARY CONTACT HELPLINES:
                           <strong>{h.location} ({h.state})</strong><br />
                           Risk Level: <span style={{ color: getRiskColor(h.risk), fontWeight: 'bold' }}>{h.risk}</span><br />
                           Threat: {h.threat}<br />
-                          Moisture: {h.moisture} | Rain: {h.rain}
+                          Critical: {h.criticalHours} | Normal: {h.normalTime}
                         </div>
                       </Popup>
                     </Marker>
@@ -278,7 +269,7 @@ PRIMARY CONTACT HELPLINES:
                   <div key={h.id} style={styles.alertItem}>
                     <div>
                       <strong>{h.location}</strong>
-                      <p style={styles.stateTag}>{h.state} • Moisture: {h.moisture} • Rain: {h.rain}</p>
+                      <p style={styles.stateTag}>{h.state} • Critical: {h.criticalHours}</p>
                       <p style={styles.threatText}>{h.threat}</p>
                     </div>
                     <span style={{ ...styles.riskTag, backgroundColor: getRiskColor(h.risk) }}>
@@ -297,7 +288,6 @@ PRIMARY CONTACT HELPLINES:
             <h3>🔍 Search Public Incident & Disaster Reports</h3>
             <p style={styles.desc}>Search or input specific news/social reports by location, time, and incident details.</p>
 
-            {/* DEMO AUTO-FILL BUTTONS */}
             <div style={{ marginBottom: '16px', padding: '10px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155' }}>
               <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>⚡ Quick Demo Scenarios (One-Click Auto Fill):</span>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -305,19 +295,13 @@ PRIMARY CONTACT HELPLINES:
                   style={styles.demoBtn} 
                   onClick={() => loadQuickScenario('Teesta River Highway, Sikkim', '5:00 PM Today', 'Heavy rockfall & landslide causing total road block')}
                 >
-                  🚧 Landslide Roadblock
+                  🚧 Landslide Roadblock (Sikkim)
                 </button>
                 <button 
                   style={styles.demoBtn} 
-                  onClick={() => loadQuickScenario('Guwahati Zoo Road, Assam', '3:30 PM Today', 'Continuous heavy rainfall causing urban flash flood and waterlogging')}
+                  onClick={() => loadQuickScenario('Guwahati Zoo Road, Assam', '3:30 PM Today', 'Continuous heavy rainfall causing urban flash flood')}
                 >
-                  🌊 Urban Flash Flood
-                </button>
-                <button 
-                  style={styles.demoBtn} 
-                  onClick={() => loadQuickScenario('Imphal West Highway, Manipur', '12:00 PM Today', 'River embankment overflow threatening nearby residential colonies')}
-                >
-                  🏠 River Overflow
+                  🌊 Urban Flash Flood (Assam)
                 </button>
               </div>
             </div>
@@ -338,7 +322,7 @@ PRIMARY CONTACT HELPLINES:
                 <input
                   type="text"
                   style={styles.inputStyle}
-                  placeholder="e.g. Today 2:00 PM"
+                  placeholder="e.g. Today 5:00 PM"
                   value={searchWhen}
                   onChange={(e) => setSearchWhen(e.target.value)}
                 />
@@ -350,7 +334,7 @@ PRIMARY CONTACT HELPLINES:
               <textarea
                 rows="3"
                 style={styles.inputStyle}
-                placeholder="e.g. Heavy rainfall triggered landslide, blocking highway traffic."
+                placeholder="e.g. Road block due to landslide near river bank."
                 value={searchWhat}
                 onChange={(e) => setSearchWhat(e.target.value)}
               />
@@ -362,22 +346,20 @@ PRIMARY CONTACT HELPLINES:
               <div style={styles.parsedResult}>
                 <h4>📌 Parsed Risk Summary:</h4>
                 <p><strong>Region / Location:</strong> {parsedData.where}</p>
-                <p><strong>Time of Event:</strong> {parsedData.when}</p>
-                <p><strong>Incident Description:</strong> {parsedData.what}</p>
-                <p><strong>Assessed Risk Level:</strong> <span style={{ color: getRiskColor(parsedData.riskLevel), fontWeight: 'bold' }}>{parsedData.riskLevel}</span></p>
 
                 <hr style={{ borderColor: '#334155', margin: '12px 0' }} />
                 
-                <h4>⏱️ Projected Recovery Timeline:</h4>
+                <h4>⏱️ Detailed Hazard Time Windows:</h4>
                 <ul style={{ paddingLeft: '20px', color: '#cbd5e1', fontSize: '13px' }}>
-                  <li>🔴 <strong>Critical Hazard Window:</strong> {parsedData.timeline.criticalUntil}</li>
-                  <li>🟡 <strong>Moderate Risk Window:</strong> {parsedData.timeline.mediumUntil}</li>
-                  <li>🟢 <strong>Expected Normalization:</strong> {parsedData.timeline.normalBy}</li>
+                  <li>🕒 <strong>Query Execution Time:</strong> {parsedData.timeline.searchTime}</li>
+                  <li>🔴 <strong>Critical Hazard Phase:</strong> {parsedData.timeline.criticalUntil}</li>
+                  <li>🟡 <strong>Stabilization Phase:</strong> {parsedData.timeline.mediumUntil}</li>
+                  <li>🟢 <strong>Safe Return Expected:</strong> {parsedData.timeline.normalBy}</li>
                 </ul>
 
                 <hr style={{ borderColor: '#334155', margin: '12px 0' }} />
 
-                <h4>🛡️ Recommended Safety & Evacuation Precautions:</h4>
+                <h4>🛡️ Recommended Field Precautions:</h4>
                 <ul style={{ paddingLeft: '20px', color: '#38bdf8', fontSize: '13px' }}>
                   {parsedData.precautions.map((p, idx) => (
                     <li key={idx} style={{ marginBottom: '4px' }}>{p}</li>
@@ -392,43 +374,16 @@ PRIMARY CONTACT HELPLINES:
         {activeTab === 'sos' && (
           <div style={styles.singleCard}>
             <h3>📱 Emergency Alert SMS & Dispatch Terminal</h3>
-            <p style={styles.desc}>Dispatch instant geo-targeted SMS emergency alerts directly to local residents and disaster management units.</p>
-
-            <div style={styles.contactBox}>
-              <h4 style={{ margin: '0 0 8px 0', color: '#f8fafc' }}>📞 Emergency Helplines & Hotline Contacts</h4>
-              <p style={{ margin: '4px 0', fontSize: '13px', color: '#cbd5e1' }}>🚨 <strong>NDRF National Control Room:</strong> 011-24363260, 9711077372</p>
-              <p style={{ margin: '4px 0', fontSize: '13px', color: '#cbd5e1' }}>📢 <strong>State Disaster Management Helpline:</strong> 1070 / 1077</p>
-              <p style={{ margin: '4px 0', fontSize: '13px', color: '#cbd5e1' }}>🚑 <strong>Emergency Police & Medical Response:</strong> 112</p>
-            </div>
+            <p style={styles.desc}>Dispatch instant geo-targeted SMS emergency alerts directly to local units.</p>
 
             {dispatchStatus && <div style={styles.successBanner}>{dispatchStatus}</div>}
 
             <form onSubmit={handleDispatch}>
               <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>Select Hazard Category:</label>
-                <select 
-                  style={{ ...styles.inputStyle, cursor: 'pointer' }} 
-                  value={selectedRiskType} 
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedRiskType(val);
-                    if (val.includes('Flood')) setCustomMsg('URGENT: Flash flood warning issued for riverbank zones. Move to higher ground immediately.');
-                    else if (val.includes('Landslide')) setCustomMsg('ALERT: Landslide roadblock reported on main highway corridor. Avoid travelling until further notice.');
-                    else setCustomMsg('EMERGENCY: Severe weather advisory in effect. Follow safety instructions from local authorities.');
-                  }}
-                >
-                  <option>Flood & Submergence Alert</option>
-                  <option>Landslide & Highway Blockage</option>
-                  <option>Heavy Storm & Cloudburst</option>
-                  <option>General Safety Evacuation</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>Broadcast SMS Message Payload:</label>
+                <label style={styles.label}>Broadcast Message Payload:</label>
                 <textarea
                   rows="4"
-                  placeholder="Enter custom emergency broadcast message or evacuation order..."
+                  placeholder="Enter custom emergency broadcast message..."
                   value={customMsg}
                   onChange={(e) => setCustomMsg(e.target.value)}
                   style={styles.inputStyle}
@@ -444,21 +399,20 @@ PRIMARY CONTACT HELPLINES:
         {/* TAB 4: ANALYTICS & DETAILED REPORTS */}
         {activeTab === 'reports' && (
           <div style={styles.singleCardLarge}>
-            <h3>📁 Regional Telemetry & Incident Analytics Report</h3>
-            <p style={styles.desc}>Complete tabular presentation of active regions, search history, risk levels, and timeline projections.</p>
+            <h3>📁 Regional Telemetry & Hazard Timeline Analytics</h3>
+            <p style={styles.desc}>Complete breakdown of active locations along with critical threat hours and safe normalization times.</p>
 
             {/* TABULAR PRESENTATION */}
-            <h4 style={{ color: '#38bdf8', marginTop: '20px' }}>📊 Active Region Telemetry Table</h4>
+            <h4 style={{ color: '#38bdf8', marginTop: '16px' }}>📊 Regional Timeline Table</h4>
             <div style={{ overflowX: 'auto', marginBottom: '24px' }}>
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHead}>
                     <th style={styles.th}>State</th>
                     <th style={styles.th}>Location</th>
-                    <th style={styles.th}>Risk Level</th>
-                    <th style={styles.th}>Threat Type</th>
-                    <th style={styles.th}>Moisture</th>
-                    <th style={styles.th}>Rainfall</th>
+                    <th style={styles.th}>Risk Severity</th>
+                    <th style={styles.th}>Critical Hazard Window</th>
+                    <th style={styles.th}>Safe Normalization Time</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -469,49 +423,16 @@ PRIMARY CONTACT HELPLINES:
                       <td style={styles.td}>
                         <span style={{ ...styles.riskTag, backgroundColor: getRiskColor(h.risk) }}>{h.risk}</span>
                       </td>
-                      <td style={styles.td}>{h.threat}</td>
-                      <td style={styles.td}>{h.moisture}</td>
-                      <td style={styles.td}>{h.rain}</td>
+                      <td style={{ ...styles.td, color: '#fca5a5' }}>{h.criticalHours}</td>
+                      <td style={{ ...styles.td, color: '#4ade80' }}>{h.normalTime}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* GRAPHICAL REPRESENTATION BAR */}
-            <h4 style={{ color: '#38bdf8' }}>📈 Risk Severity Projections & Stabilization Timeline</h4>
-            <div style={styles.chartContainer}>
-              <div style={styles.chartBarGroup}>
-                <div style={{ fontSize: '12px', width: '120px' }}>Teesta Valley</div>
-                <div style={styles.barBackground}>
-                  <div style={{ ...styles.barFill, width: '90%', backgroundColor: '#dc2626' }}>Critical (0 - 8 Hours)</div>
-                </div>
-              </div>
-
-              <div style={styles.chartBarGroup}>
-                <div style={{ fontSize: '12px', width: '120px' }}>Guwahati Highway</div>
-                <div style={styles.barBackground}>
-                  <div style={{ ...styles.barFill, width: '70%', backgroundColor: '#ea580c' }}>High (6 - 12 Hours)</div>
-                </div>
-              </div>
-
-              <div style={styles.chartBarGroup}>
-                <div style={{ fontSize: '12px', width: '120px' }}>Cherrapunji Bypass</div>
-                <div style={styles.barBackground}>
-                  <div style={{ ...styles.barFill, width: '45%', backgroundColor: '#eab308', color: '#000' }}>Medium (12 - 18 Hours)</div>
-                </div>
-              </div>
-
-              <div style={styles.chartBarGroup}>
-                <div style={{ fontSize: '12px', width: '120px' }}>Kohima Road</div>
-                <div style={styles.barBackground}>
-                  <div style={{ ...styles.barFill, width: '25%', backgroundColor: '#16a34a' }}>Normalizing (24+ Hours)</div>
-                </div>
-              </div>
-            </div>
-
-            <button style={{ ...styles.downloadBtn, marginTop: '24px' }} onClick={downloadTextReport}>
-              📄 Download Official Detailed Disaster Report (.TXT)
+            <button style={styles.downloadBtn} onClick={downloadTextReport}>
+              📄 Download Hazard Timeline Report (.TXT)
             </button>
           </div>
         )}
@@ -552,14 +473,9 @@ const styles = {
   downloadBtn: { padding: '12px 24px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
   label: { display: 'block', marginBottom: '6px', color: '#cbd5e1', fontSize: '13px' },
   successBanner: { padding: '12px', backgroundColor: '#15803d', color: '#fff', borderRadius: '6px', marginBottom: '16px' },
-  contactBox: { backgroundColor: '#0f172a', padding: '14px', borderRadius: '8px', border: '1px solid #334155', marginBottom: '20px' },
   table: { width: '100%', borderCollapse: 'collapse', marginTop: '8px' },
   tableHead: { backgroundColor: '#0f172a', borderBottom: '2px solid #334155' },
   th: { padding: '10px', textAlign: 'left', fontSize: '12px', color: '#94a3b8' },
   tableRow: { borderBottom: '1px solid #334155' },
-  td: { padding: '10px', fontSize: '13px', color: '#cbd5e1' },
-  chartContainer: { backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', marginTop: '12px', border: '1px solid #334155' },
-  chartBarGroup: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' },
-  barBackground: { flex: 1, backgroundColor: '#1e293b', borderRadius: '6px', overflow: 'hidden', height: '24px' },
-  barFill: { height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '8px', fontSize: '11px', fontWeight: 'bold', color: '#fff' }
+  td: { padding: '10px', fontSize: '13px', color: '#cbd5e1' }
 };
