@@ -18,28 +18,31 @@ const initialHotspots = [
   { id: 6, state: 'Manipur', location: 'Imphal West Highway', lat: 24.8170, lng: 93.9368, risk: 'CRITICAL', threat: 'River Overflow & Inundation', moisture: '95%', rain: '160mm', criticalHours: '0 - 10 Hours', normalTime: 'After 48 Hours', progressPct: 15 }
 ];
 
+const broadcastRecipients = [
+  { id: 1, role: 'District Disaster Management Authority (DDMA)', contact: '+91 98765-XXXX1', zone: 'Sikkim / Teesta Valley', status: 'Active Node' },
+  { id: 2, role: 'NDRF 1st Battalion Command Control', contact: '+91 98765-XXXX2', zone: 'Assam & Meghalaya Sector', status: 'Active Node' },
+  { id: 3, role: 'Border Roads Organisation (BRO) Division', contact: '+91 98765-XXXX3', zone: 'NH-10 & Highway Control', status: 'Active Node' },
+  { id: 4, role: 'State Emergency Operation Centre (SEOC)', contact: '+91 98765-XXXX4', zone: 'Central Regional Hub', status: 'Active Node' },
+  { id: 5, role: 'Local Police & Traffic Control Patrol', contact: '+91 98765-XXXX5', zone: 'Targeted High-Risk Sub-Divisions', status: 'Active Node' }
+];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('nlp');
+  const [activeTab, setActiveTab] = useState('reports');
   const [hotspots, setHotspots] = useState(initialHotspots);
   
-  // Search & Parsing State
+  // Search State
   const [searchWhere, setSearchWhere] = useState('Teesta River Highway, Sikkim');
   const [searchWhen, setSearchWhen] = useState('5:00 PM Today');
   const [searchWhat, setSearchWhat] = useState('Heavy rockfall & landslide causing total road block');
   const [parsedData, setParsedData] = useState(null);
 
   // SMS Terminal State
-  const [customMsg, setCustomMsg] = useState('');
+  const [selectedZone, setSelectedZone] = useState('All Critical Zones');
+  const [customMsg, setCustomMsg] = useState('CRITICAL ALERT: Severe landslide hazard detected near Teesta Valley NH-10. Immediate evacuation and highway closure initiated.');
   const [dispatchStatus, setDispatchStatus] = useState(null);
 
   useEffect(() => {
     handleIncidentSearch();
-    fetch('https://terraguard-etyf.onrender.com/api/hotspots')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.length > 0) setHotspots(data);
-      })
-      .catch((err) => console.error('Backend connection check:', err));
   }, []);
 
   const analyzeIncident = (whereInput, whenInput, whatInput) => {
@@ -113,8 +116,8 @@ export default function App() {
 
   const handleDispatch = (e) => {
     e.preventDefault();
-    setDispatchStatus('🚨 Emergency SMS Alert Broadcasted to Target Region Nodes!');
-    setTimeout(() => setDispatchStatus(null), 4500);
+    setDispatchStatus(`🚨 Emergency SMS Broadcast Sent to ${broadcastRecipients.length} Emergency Nodes (${selectedZone})!`);
+    setTimeout(() => setDispatchStatus(null), 5000);
   };
 
   const getRiskColor = (risk) => {
@@ -126,6 +129,33 @@ export default function App() {
 
   const handleDownloadPDFReport = () => {
     window.print();
+  };
+
+  // CSV DOWNLOAD ENGINE FOR TAB 4
+  const handleExportCSV = () => {
+    const headers = ["ID", "State", "Location", "Threat Description", "Risk Level", "Moisture Level", "Rainfall (mm)", "Critical Window", "Normalization Time"];
+    const rows = hotspots.map(h => [
+      h.id,
+      `"${h.state}"`,
+      `"${h.location}"`,
+      `"${h.threat}"`,
+      h.risk,
+      h.moisture,
+      h.rain,
+      `"${h.criticalHours}"`,
+      `"${h.normalTime}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `TerraGuard_Regional_Hazard_Data_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -161,7 +191,7 @@ export default function App() {
         }
       `}</style>
 
-      {/* NAVBAR & HEADER */}
+      {/* HEADER */}
       <header style={styles.header} className="no-print">
         <div style={styles.logoBox}>
           <span style={styles.badge}>SIH 26001</span>
@@ -170,6 +200,7 @@ export default function App() {
         <p style={styles.subtitle}>Regional Hazard & Incident Monitoring System - NER Zone</p>
       </header>
 
+      {/* NAVBAR */}
       <nav style={styles.nav} className="no-print">
         <button style={activeTab === 'dashboard' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('dashboard')}>
           📊 Live Risk Dashboard
@@ -352,44 +383,89 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: EMERGENCY ALERT SMS */}
+        {/* TAB 3: EMERGENCY ALERT SMS BROADCAST */}
         {activeTab === 'sos' && (
-          <div style={styles.card} className="no-print">
-            <h3>📱 Emergency Alert SMS & Dispatch Terminal</h3>
-            <p style={styles.desc}>Dispatch instant geo-targeted SMS emergency alerts directly to regional emergency nodes.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="no-print">
+            <div style={styles.card}>
+              <h3>📱 Emergency SMS Dispatch Console</h3>
+              <p style={styles.desc}>Send instant geo-targeted SMS emergency alerts directly to disaster authority nodes.</p>
 
-            {dispatchStatus && <div style={styles.successBanner}>{dispatchStatus}</div>}
+              {dispatchStatus && <div style={styles.successBanner}>{dispatchStatus}</div>}
 
-            <form onSubmit={handleDispatch}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>Broadcast Message Payload:</label>
-                <textarea
-                  rows="4"
-                  placeholder="Enter custom emergency broadcast message..."
-                  value={customMsg}
-                  onChange={(e) => setCustomMsg(e.target.value)}
-                  style={styles.inputStyle}
-                  required
-                />
+              <form onSubmit={handleDispatch}>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={styles.label}>🎯 Select Target Region / Zone:</label>
+                  <select 
+                    style={styles.inputStyle} 
+                    value={selectedZone} 
+                    onChange={(e) => setSelectedZone(e.target.value)}
+                  >
+                    <option value="All Critical Zones">All Critical Zones (NER High-Risk Belt)</option>
+                    <option value="Sikkim NH-10 Corridor">Sikkim - NH-10 Corridor</option>
+                    <option value="Assam Flash Flood Zone">Assam - Urban & Valley Flood Zone</option>
+                    <option value="Arunachal Mudslide Belt">Arunachal - Mudslide Belt</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={styles.label}>📝 Broadcast Message Payload:</label>
+                  <textarea
+                    rows="4"
+                    value={customMsg}
+                    onChange={(e) => setCustomMsg(e.target.value)}
+                    style={styles.inputStyle}
+                    required
+                  />
+                </div>
+
+                <button type="submit" style={styles.dispatchBtn}>🚨 Broadcast Emergency SMS to Selected Nodes</button>
+              </form>
+            </div>
+
+            <div style={styles.card}>
+              <h3>👥 Target Recipients Directory</h3>
+              <p style={styles.desc}>Yeh alert kin-kin emergency contacts aur local departments ke pass ja raha hai:</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {broadcastRecipients.map((r) => (
+                  <div key={r.id} style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '13px', color: '#f8fafc' }}>{r.role}</strong>
+                      <span style={{ backgroundColor: '#15803d', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>{r.status}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#94a3b8' }}>
+                      <span>📞 Contact: {r.contact}</span>
+                      <span>📍 Zone: {r.zone}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <button type="submit" style={styles.dispatchBtn}>🚨 Broadcast Emergency SMS Alert</button>
-            </form>
+            </div>
           </div>
         )}
 
-        {/* TAB 4: ANALYTICS & REPORTS */}
+        {/* TAB 4: ANALYTICS & TABULAR CSV EXPORT */}
         {activeTab === 'reports' && (
           <div style={styles.card} className="no-print">
-            <h3>📁 Regional Hazard Timeline Analytics</h3>
-            <p style={styles.desc}>Summary breakdown of all monitored locations across North East Region (NER).</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>📁 Regional Hazard Timeline Analytics</h3>
+                <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '13px' }}>Summary breakdown of all monitored locations across North East Region (NER).</p>
+              </div>
 
-            <div style={{ overflowX: 'auto' }}>
+              {/* ONE-CLICK CSV/EXCEL DOWNLOAD BUTTON */}
+              <button onClick={handleExportCSV} style={styles.exportExcelBtn}>
+                📊 Export All Regions Data (CSV / Excel Sheet)
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto', marginTop: '16px' }}>
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHead}>
                     <th style={styles.th}>State</th>
                     <th style={styles.th}>Location</th>
+                    <th style={styles.th}>Threat Type</th>
                     <th style={styles.th}>Risk Level</th>
                     <th style={styles.th}>Critical Window</th>
                     <th style={styles.th}>Normalization</th>
@@ -398,13 +474,14 @@ export default function App() {
                 <tbody>
                   {hotspots.map((h) => (
                     <tr key={h.id} style={styles.tableRow}>
-                      <td style={styles.td}>{h.state}</td>
+                      <td style={styles.td}><strong>{h.state}</strong></td>
                       <td style={styles.td}>{h.location}</td>
+                      <td style={{ ...styles.td, color: '#94a3b8' }}>{h.threat}</td>
                       <td style={styles.td}>
                         <span style={{ ...styles.riskTag, backgroundColor: getRiskColor(h.risk) }}>{h.risk}</span>
                       </td>
-                      <td style={{ ...styles.td, color: '#fca5a5' }}>{h.criticalHours}</td>
-                      <td style={{ ...styles.td, color: '#4ade80' }}>{h.normalTime}</td>
+                      <td style={{ ...styles.td, color: '#fca5a5', fontWeight: 'bold' }}>{h.criticalHours}</td>
+                      <td style={{ ...styles.td, color: '#4ade80', fontWeight: 'bold' }}>{h.normalTime}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -448,8 +525,9 @@ const styles = {
   phaseCardYellow: { backgroundColor: 'rgba(234, 179, 8, 0.1)', border: '1px solid #eab308', padding: '10px', borderRadius: '6px' },
   phaseCardGreen: { backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', padding: '10px', borderRadius: '6px' },
   downloadBtn: { width: '100%', marginTop: '20px', padding: '12px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' },
-  dispatchBtn: { padding: '12px 24px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  successBanner: { padding: '12px', backgroundColor: '#15803d', color: '#fff', borderRadius: '6px', marginBottom: '16px' },
+  exportExcelBtn: { padding: '10px 18px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' },
+  dispatchBtn: { width: '100%', padding: '12px 24px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' },
+  successBanner: { padding: '12px', backgroundColor: '#15803d', color: '#fff', borderRadius: '6px', marginBottom: '16px', fontSize: '12px', fontWeight: 'bold' },
   riskTag: { padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', color: '#fff' },
   table: { width: '100%', borderCollapse: 'collapse', marginTop: '8px' },
   tableHead: { backgroundColor: '#0f172a', borderBottom: '2px solid #334155' },
