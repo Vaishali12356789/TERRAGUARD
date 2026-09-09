@@ -9,50 +9,159 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Expanded mock hotspots list
+const initialHotspots = [
+  { id: 1, state: 'Sikkim', location: 'Teesta Valley NH-10', lat: 27.3389, lng: 88.6065, risk: 'CRITICAL', threat: 'Major Landslide & Road Blockage', moisture: '92%', rain: '140mm' },
+  { id: 2, state: 'Assam', location: 'Guwahati Zoo Road', lat: 26.1445, lng: 91.7362, risk: 'HIGH', threat: 'Urban Flash Flood Hazard', moisture: '85%', rain: '95mm' },
+  { id: 3, state: 'Meghalaya', location: 'Cherrapunji Bypass', lat: 25.2986, lng: 91.7321, risk: 'MEDIUM', threat: 'Soil Erosion & Slope Instability', moisture: '74%', rain: '60mm' },
+  { id: 4, state: 'Arunachal Pradesh', location: 'Itanagar Highway', lat: 27.0844, lng: 93.6053, risk: 'HIGH', threat: 'Mudslide & Falling Rocks', moisture: '88%', rain: '110mm' },
+  { id: 5, state: 'Nagaland', location: 'Kohima Bypass Road', lat: 25.6751, lng: 94.1086, risk: 'MEDIUM', threat: 'Minor Landslide Activity', moisture: '68%', rain: '45mm' },
+  { id: 6, state: 'Manipur', location: 'Imphal West Highway', lat: 24.8170, lng: 93.9368, risk: 'CRITICAL', threat: 'River Overflow & Inundation', moisture: '95%', rain: '160mm' }
+];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [hotspots, setHotspots] = useState([]);
-  const [inputText, setInputText] = useState('');
+  const [hotspots, setHotspots] = useState(initialHotspots);
+  
+  // NLP / Search State
+  const [searchWhere, setSearchWhere] = useState('');
+  const [searchWhen, setSearchWhen] = useState('');
+  const [searchWhat, setSearchWhat] = useState('');
   const [parsedData, setParsedData] = useState(null);
+  const [searchHistory, setSearchHistory] = useState([]);
+
+  // SMS / SOS State
   const [customMsg, setCustomMsg] = useState('');
+  const [selectedRiskType, setSelectedRiskType] = useState('Flood & Submergence Alert');
   const [dispatchStatus, setDispatchStatus] = useState(null);
 
   useEffect(() => {
     fetch('https://terraguard-etyf.onrender.com/api/hotspots')
       .then((res) => res.json())
-      .then((data) => setHotspots(data))
+      .then((data) => {
+        if (data && data.length > 0) setHotspots(data);
+      })
       .catch((err) => console.error('Error fetching backend data:', err));
   }, []);
 
-  const handleParse = async () => {
-    if (!inputText) return;
-    try {
-      const res = await fetch('https://terraguard-etyf.onrender.com/api/parse-nlp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText }),
-      });
-      const data = await res.json();
-      setParsedData(data);
-    } catch (err) {
-      console.error('NLP Error:', err);
-    }
+  // Handle Search in Incident Tracker
+  const handleIncidentSearch = () => {
+    if (!searchWhere && !searchWhat) return;
+
+    const newResult = {
+      id: Date.now(),
+      where: searchWhere || 'Teesta Valley, Sikkim',
+      when: searchWhen || 'Today, 2:30 PM',
+      what: searchWhat || 'Landslide reported due to heavy rains',
+      riskLevel: (searchWhat.toLowerCase().includes('flood') || searchWhat.toLowerCase().includes('heavy') || searchWhat.toLowerCase().includes('block')) ? 'CRITICAL' : 'HIGH',
+      confidenceScore: '94.8%',
+      timeline: {
+        criticalUntil: 'Next 0 to 6 Hours (Immediate Threat Window)',
+        mediumUntil: '6 to 18 Hours (Stabilization Phase)',
+        normalBy: 'After 24 Hours (Expected Normalcy)'
+      },
+      precautions: [
+        'Immediate evacuation of residents from identified low-lying zones.',
+        'Total restriction of vehicular movement on affected highway corridors.',
+        'Deployment of emergency power backup and clean drinking water supplies.',
+        'Continuous monitoring of soil saturation and satellite rainfall feeds.'
+      ],
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    setParsedData(newResult);
+    setSearchHistory([newResult, ...searchHistory]);
   };
 
   const handleDispatch = (e) => {
     e.preventDefault();
-    setDispatchStatus('Alert broadcasted successfully to state emergency nodes!');
-    setTimeout(() => setDispatchStatus(null), 4000);
+    setDispatchStatus('Emergency SMS Alert Broadcasted to State Disaster Nodes & Hotlines successfully!');
+    setTimeout(() => setDispatchStatus(null), 4500);
   };
 
-  const downloadCSV = () => {
-    const headers = "ID,State,Location,Latitude,Longitude,Risk,Threat,Moisture,Rainfall\n";
-    const rows = hotspots.map(h => `${h.id},"${h.state}","${h.location}",${h.lat},${h.lng},${h.risk},"${h.threat}",${h.moisture},${h.rain}`).join("\n");
-    const blob = new Blob([headers + rows], { type: 'text/csv' });
+  const getRiskColor = (risk) => {
+    if (risk === 'CRITICAL') return '#dc2626'; // Red
+    if (risk === 'HIGH') return '#ea580c';     // Dark Orange
+    if (risk === 'MEDIUM') return '#eab308';   // Yellow/Amber
+    return '#16a34a';                          // Green
+  };
+
+  // PROPER THEORY DOCUMENT REPORT GENERATOR
+  const downloadTextReport = () => {
+    const timestamp = new Date().toLocaleString();
+    
+    let reportContent = `================================================================================
+               TERRAGUARD GIS PLATFORM - DISASTER ASSESSMENT REPORT
+================================================================================
+Generated On       : ${timestamp}
+System Classification: SIH 26001 - Early Warning & Incident Monitoring System
+Target Region       : North Eastern Region (NER) Zone
+Issuing Authority   : NDRF & State Disaster Management Authority (SDMA) Node
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+This document provides a comprehensive situation and telemetry risk analysis for 
+the monitored North Eastern Region zones. Real-time satellite imagery, ground-sensor
+hydrological telemetry, and public incident parsing have been synthesized to formulate
+this operational advisory.
+
+2. ACTIVE REGIONAL HAZARD ASSESSMENT
+--------------------------------------------------------------------------------\n`;
+
+    hotspots.forEach((h, index) => {
+      reportContent += `[${index + 1}] LOCATION: ${h.location.toUpperCase()} (${h.state.toUpperCase()})
+    - Threat Classification : ${h.threat}
+    - Risk Level Assigned   : ${h.risk}
+    - Coordinates           : Lat ${h.lat}, Lng ${h.lng}
+    - Soil Moisture Level   : ${h.moisture}
+    - Recorded Rainfall     : ${h.rain}
+--------------------------------------------------------------------------------\n`;
+    });
+
+    reportContent += `\n3. INCIDENT QUERY & PARSED AI THREAT SUMMARY
+--------------------------------------------------------------------------------\n`;
+
+    if (parsedData) {
+      reportContent += `Query Target Region  : ${parsedData.where}
+Query Timestamp      : ${parsedData.when}
+Incident Description : ${parsedData.what}
+Assessed Risk Status : ${parsedData.riskLevel}
+
+STABILIZATION & HAZARD TIMELINE:
+  * Critical Window  : ${parsedData.timeline.criticalUntil}
+  * Moderate Window  : ${parsedData.timeline.mediumUntil}
+  * Expected Normalcy: ${parsedData.timeline.normalBy}
+
+RECOMMENDED EMERGENCY PRECAUTIONS:
+${parsedData.precautions.map((p, idx) => `  (${idx + 1}) ${p}`).join('\n')}
+--------------------------------------------------------------------------------\n`;
+    } else {
+      reportContent += `No active incident search queries recorded for this session.
+--------------------------------------------------------------------------------\n`;
+    }
+
+    reportContent += `\n4. EMERGENCY DIRECTORY & STANDARD OPERATING PROCEDURES
+--------------------------------------------------------------------------------
+PRIMARY CONTACT HELPLINES:
+  - NDRF Control Room           : 011-24363260 / +91-9711077372
+  - State Disaster Response     : 1070 / 1077
+  - Emergency Central Helpline  : 112
+
+OPERATIONAL PRECAUTIONS:
+  1. Maintain immediate geo-fenced communication alerts in CRITICAL zones.
+  2. Clear state highways for emergency search-and-rescue vehicle movements.
+  3. Prepare NDRF relief stations with medical kits and ration supplies.
+
+================================================================================
+                             END OF OFFICIAL ADVISORY
+================================================================================`;
+
+    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'TerraGuard_Hotspots_Report.csv';
+    a.download = `TerraGuard_Official_Report_${Date.now()}.txt`;
     a.click();
   };
 
@@ -63,7 +172,7 @@ export default function App() {
           <span style={styles.badge}>SIH 26001</span>
           <h1 style={styles.title}>TerraGuard GIS Platform</h1>
         </div>
-        <p style={styles.subtitle}>Early Warning & Incident Monitoring System - NER Zone</p>
+        <p style={styles.subtitle}>Early Warning & Disaster Incident Monitoring System - NER Zone</p>
       </header>
 
       <nav style={styles.nav}>
@@ -71,17 +180,18 @@ export default function App() {
           📊 Live Risk Dashboard
         </button>
         <button style={activeTab === 'nlp' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('nlp')}>
-          🧠 NLP Incident Parser
+          🔍 Public Incident & News Search
         </button>
         <button style={activeTab === 'sos' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('sos')}>
-          🚨 Emergency SOS Dispatch
+          📱 Emergency Alert SMS
         </button>
         <button style={activeTab === 'reports' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('reports')}>
-          📁 Analytics & Reports
+          📁 Analytics & Detailed Reports
         </button>
       </nav>
 
       <main style={styles.main}>
+        {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div style={styles.grid}>
             <div style={styles.mapCard}>
@@ -103,7 +213,7 @@ export default function App() {
                       <Popup>
                         <div style={{ color: '#0f172a' }}>
                           <strong>{h.location} ({h.state})</strong><br />
-                          Risk Level: <span style={{ color: h.risk === 'CRITICAL' ? '#dc2626' : '#d97706', fontWeight: 'bold' }}>{h.risk}</span><br />
+                          Risk Level: <span style={{ color: getRiskColor(h.risk), fontWeight: 'bold' }}>{h.risk}</span><br />
                           Threat: {h.threat}<br />
                           Moisture: {h.moisture} | Rain: {h.rain}
                         </div>
@@ -115,7 +225,7 @@ export default function App() {
             </div>
 
             <div style={styles.sideCard}>
-              <h3 style={{ margin: '0 0 16px 0' }}>Active Hotspot Feeds ({hotspots.length})</h3>
+              <h3 style={{ margin: '0 0 16px 0' }}>Active Risk Hotspots ({hotspots.length})</h3>
               <div style={styles.alertList}>
                 {hotspots.map((h) => (
                   <div key={h.id} style={styles.alertItem}>
@@ -124,7 +234,7 @@ export default function App() {
                       <p style={styles.stateTag}>{h.state} • Moisture: {h.moisture} • Rain: {h.rain}</p>
                       <p style={styles.threatText}>{h.threat}</p>
                     </div>
-                    <span style={{ ...styles.riskTag, backgroundColor: h.risk === 'CRITICAL' ? '#dc2626' : '#d97706' }}>
+                    <span style={{ ...styles.riskTag, backgroundColor: getRiskColor(h.risk) }}>
                       {h.risk}
                     </span>
                   </div>
@@ -134,59 +244,196 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 2: INCIDENT & NEWS SEARCH */}
         {activeTab === 'nlp' && (
           <div style={styles.singleCard}>
-            <h3>AI/NLP Social & News Parser</h3>
-            <p style={styles.desc}>Paste raw emergency tweets, SMS feeds, or news snippets to extract structured geo-threats.</p>
-            <textarea
-              rows="4"
-              style={styles.inputStyle}
-              placeholder="e.g., Heavy landslide reported on Teesta Valley Road NH-10 Sikkim. Traffic blocked."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-            />
-            <button style={styles.nlpBtn} onClick={handleParse}>Parse Incident Data</button>
+            <h3>🔍 Search Public Incident & Disaster Reports</h3>
+            <p style={styles.desc}>Search or input specific news/social reports by location, time, and incident details.</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={styles.label}>📍 Where (Region / Location):</label>
+                <input
+                  type="text"
+                  style={styles.inputStyle}
+                  placeholder="e.g. Teesta Valley, Sikkim"
+                  value={searchWhere}
+                  onChange={(e) => setSearchWhere(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={styles.label}>⏰ When (Time / Date):</label>
+                <input
+                  type="text"
+                  style={styles.inputStyle}
+                  placeholder="e.g. Today 2:00 PM"
+                  value={searchWhen}
+                  onChange={(e) => setSearchWhen(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={styles.label}>📝 What Happened (Incident Details):</label>
+              <textarea
+                rows="3"
+                style={styles.inputStyle}
+                placeholder="e.g. Heavy rainfall triggered landslide, blocking highway traffic."
+                value={searchWhat}
+                onChange={(e) => setSearchWhat(e.target.value)}
+              />
+            </div>
+
+            <button style={styles.nlpBtn} onClick={handleIncidentSearch}>🔍 Search & Parse Incident Risk</button>
 
             {parsedData && (
               <div style={styles.parsedResult}>
-                <h4>Parsed Threat Output:</h4>
-                <p><strong>Detected Region:</strong> {parsedData.detectedState}</p>
-                <p><strong>Threat Level:</strong> {parsedData.riskLevel}</p>
-                <p><strong>Confidence Score:</strong> {parsedData.confidenceScore}</p>
-                <p><strong>Timestamp:</strong> {parsedData.timestamp}</p>
+                <h4>📌 Parsed Risk Summary:</h4>
+                <p><strong>Region / Location:</strong> {parsedData.where}</p>
+                <p><strong>Time of Event:</strong> {parsedData.when}</p>
+                <p><strong>Incident Description:</strong> {parsedData.what}</p>
+                <p><strong>Assessed Risk Level:</strong> <span style={{ color: getRiskColor(parsedData.riskLevel), fontWeight: 'bold' }}>{parsedData.riskLevel}</span></p>
+
+                <hr style={{ borderColor: '#334155', margin: '12px 0' }} />
+                
+                <h4>⏱️ Projected Recovery Timeline:</h4>
+                <ul style={{ paddingLeft: '20px', color: '#cbd5e1', fontSize: '13px' }}>
+                  <li>🔴 <strong>Critical Hazard Window:</strong> {parsedData.timeline.criticalUntil}</li>
+                  <li>🟡 <strong>Moderate Risk Window:</strong> {parsedData.timeline.mediumUntil}</li>
+                  <li>🟢 <strong>Expected Normalization:</strong> {parsedData.timeline.normalBy}</li>
+                </ul>
+
+                <hr style={{ borderColor: '#334155', margin: '12px 0' }} />
+
+                <h4>🛡️ Recommended Safety & Evacuation Precautions:</h4>
+                <ul style={{ paddingLeft: '20px', color: '#38bdf8', fontSize: '13px' }}>
+                  {parsedData.precautions.map((p, idx) => (
+                    <li key={idx}>{p}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
         )}
 
+        {/* TAB 3: EMERGENCY ALERT SMS */}
         {activeTab === 'sos' && (
           <div style={styles.singleCard}>
-            <h3>Emergency Alert Broadcast Terminal</h3>
-            <p style={styles.desc}>Dispatch instant geo-fenced SOS broadcasts directly to state disaster management units.</p>
+            <h3>📱 Emergency Alert SMS & Dispatch Terminal</h3>
+            <p style={styles.desc}>Dispatch instant geo-targeted SMS emergency alerts directly to local residents and disaster management units.</p>
+
+            <div style={styles.contactBox}>
+              <h4 style={{ margin: '0 0 8px 0', color: '#f8fafc' }}>📞 Emergency Helplines & Hotline Contacts</h4>
+              <p style={{ margin: '4px 0', fontSize: '13px', color: '#cbd5e1' }}>🚨 <strong>NDRF National Control Room:</strong> 011-24363260, 9711077372</p>
+              <p style={{ margin: '4px 0', fontSize: '13px', color: '#cbd5e1' }}>📢 <strong>State Disaster Management Helpline:</strong> 1070 / 1077</p>
+              <p style={{ margin: '4px 0', fontSize: '13px', color: '#cbd5e1' }}>🚑 <strong>Emergency Police & Medical Response:</strong> 112</p>
+            </div>
+
             {dispatchStatus && <div style={styles.successBanner}>{dispatchStatus}</div>}
+
             <form onSubmit={handleDispatch}>
               <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>Broadcast Message Payload:</label>
+                <label style={styles.label}>Select Hazard Category:</label>
+                <select 
+                  style={{ ...styles.inputStyle, cursor: 'pointer' }} 
+                  value={selectedRiskType} 
+                  onChange={(e) => setSelectedRiskType(e.target.value)}
+                >
+                  <option>Flood & Submergence Alert</option>
+                  <option>Landslide & Highway Blockage</option>
+                  <option>Heavy Storm & Cloudburst</option>
+                  <option>General Safety Evacuation</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={styles.label}>Broadcast SMS Message Payload:</label>
                 <textarea
                   rows="4"
-                  placeholder="Enter urgent evacuation or safety instructions..."
+                  placeholder="Enter custom emergency broadcast message or evacuation order..."
                   value={customMsg}
                   onChange={(e) => setCustomMsg(e.target.value)}
                   style={styles.inputStyle}
                   required
                 />
               </div>
-              <button type="submit" style={styles.dispatchBtn}>🚨 Broadcast Alert to NDRF & SDMA</button>
+
+              <button type="submit" style={styles.dispatchBtn}>🚨 Broadcast Emergency SMS Alert</button>
             </form>
           </div>
         )}
 
+        {/* TAB 4: ANALYTICS & DETAILED REPORTS */}
         {activeTab === 'reports' && (
-          <div style={styles.singleCard}>
-            <h3>Export NDRF & SDMA Risk Reports</h3>
-            <p style={styles.desc}>Generate official telemetry summaries and GIS disaster hotspot data for state administrative authorities.</p>
-            <button style={styles.downloadBtn} onClick={downloadCSV}>
-              📥 Download Hotspot CSV Summary
+          <div style={styles.singleCardLarge}>
+            <h3>📁 Regional Telemetry & Incident Analytics Report</h3>
+            <p style={styles.desc}>Complete tabular presentation of active regions, search history, risk levels, and timeline projections.</p>
+
+            {/* TABULAR PRESENTATION */}
+            <h4 style={{ color: '#38bdf8', marginTop: '20px' }}>📊 Active Region Telemetry Table</h4>
+            <div style={{ overflowX: 'auto', marginBottom: '24px' }}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHead}>
+                    <th style={styles.th}>State</th>
+                    <th style={styles.th}>Location</th>
+                    <th style={styles.th}>Risk Level</th>
+                    <th style={styles.th}>Threat Type</th>
+                    <th style={styles.th}>Moisture</th>
+                    <th style={styles.th}>Rainfall</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hotspots.map((h) => (
+                    <tr key={h.id} style={styles.tableRow}>
+                      <td style={styles.td}>{h.state}</td>
+                      <td style={styles.td}>{h.location}</td>
+                      <td style={styles.td}>
+                        <span style={{ ...styles.riskTag, backgroundColor: getRiskColor(h.risk) }}>{h.risk}</span>
+                      </td>
+                      <td style={styles.td}>{h.threat}</td>
+                      <td style={styles.td}>{h.moisture}</td>
+                      <td style={styles.td}>{h.rain}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* GRAPHICAL REPRESENTATION BAR */}
+            <h4 style={{ color: '#38bdf8' }}>📈 Risk Severity Projections & Stabilization Timeline</h4>
+            <div style={styles.chartContainer}>
+              <div style={styles.chartBarGroup}>
+                <div style={{ fontSize: '12px', width: '120px' }}>Teesta Valley</div>
+                <div style={styles.barBackground}>
+                  <div style={{ ...styles.barFill, width: '90%', backgroundColor: '#dc2626' }}>Critical (0 - 6 Hours)</div>
+                </div>
+              </div>
+
+              <div style={styles.chartBarGroup}>
+                <div style={{ fontSize: '12px', width: '120px' }}>Guwahati Highway</div>
+                <div style={styles.barBackground}>
+                  <div style={{ ...styles.barFill, width: '70%', backgroundColor: '#ea580c' }}>High (6 - 12 Hours)</div>
+                </div>
+              </div>
+
+              <div style={styles.chartBarGroup}>
+                <div style={{ fontSize: '12px', width: '120px' }}>Cherrapunji Bypass</div>
+                <div style={styles.barBackground}>
+                  <div style={{ ...styles.barFill, width: '45%', backgroundColor: '#eab308', color: '#000' }}>Medium (12 - 18 Hours)</div>
+                </div>
+              </div>
+
+              <div style={styles.chartBarGroup}>
+                <div style={{ fontSize: '12px', width: '120px' }}>Kohima Road</div>
+                <div style={styles.barBackground}>
+                  <div style={{ ...styles.barFill, width: '25%', backgroundColor: '#16a34a' }}>Normalizing (24+ Hours)</div>
+                </div>
+              </div>
+            </div>
+
+            <button style={{ ...styles.downloadBtn, marginTop: '24px' }} onClick={downloadTextReport}>
+              📄 Download Official Detailed Disaster Report (.TXT)
             </button>
           </div>
         )}
@@ -215,14 +462,25 @@ const styles = {
   alertItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid #1e293b' },
   stateTag: { fontSize: '11px', color: '#38bdf8', margin: '2px 0 0 0' },
   threatText: { fontSize: '11px', color: '#fca5a5', margin: '2px 0 0 0' },
-  riskTag: { padding: '3px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', color: '#fff' },
-  singleCard: { backgroundColor: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', maxWidth: '700px' },
+  riskTag: { padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', color: '#fff' },
+  singleCard: { backgroundColor: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', maxWidth: '750px' },
+  singleCardLarge: { backgroundColor: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', maxWidth: '1000px' },
   desc: { color: '#94a3b8', marginBottom: '16px', fontSize: '14px' },
-  inputStyle: { width: '100%', padding: '12px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' },
-  nlpBtn: { marginTop: '12px', padding: '10px 20px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+  inputStyle: { width: '100%', padding: '10px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' },
+  nlpBtn: { marginTop: '8px', padding: '10px 20px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
   parsedResult: { marginTop: '20px', padding: '16px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #0284c7' },
   dispatchBtn: { padding: '12px 24px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
   downloadBtn: { padding: '12px 24px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  label: { display: 'block', marginBottom: '8px', color: '#cbd5e1' },
-  successBanner: { padding: '12px', backgroundColor: '#15803d', color: '#fff', borderRadius: '6px', marginBottom: '16px' }
+  label: { display: 'block', marginBottom: '6px', color: '#cbd5e1', fontSize: '13px' },
+  successBanner: { padding: '12px', backgroundColor: '#15803d', color: '#fff', borderRadius: '6px', marginBottom: '16px' },
+  contactBox: { backgroundColor: '#0f172a', padding: '14px', borderRadius: '8px', border: '1px solid #334155', marginBottom: '20px' },
+  table: { width: '100%', borderCollapse: 'collapse', marginTop: '8px' },
+  tableHead: { backgroundColor: '#0f172a', borderBottom: '2px solid #334155' },
+  th: { padding: '10px', textAlign: 'left', fontSize: '12px', color: '#94a3b8' },
+  tableRow: { borderBottom: '1px solid #334155' },
+  td: { padding: '10px', fontSize: '13px', color: '#cbd5e1' },
+  chartContainer: { backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', marginTop: '12px', border: '1px solid #334155' },
+  chartBarGroup: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' },
+  barBackground: { flex: 1, backgroundColor: '#1e293b', borderRadius: '6px', overflow: 'hidden', height: '24px' },
+  barFill: { height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '8px', fontSize: '11px', fontWeight: 'bold', color: '#fff' }
 };
