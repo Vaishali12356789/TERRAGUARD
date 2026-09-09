@@ -44,33 +44,86 @@ export default function App() {
       .catch((err) => console.error('Error fetching backend data:', err));
   }, []);
 
-  // Handle Search in Incident Tracker
-  const handleIncidentSearch = () => {
-    if (!searchWhere && !searchWhat) return;
+  // Dynamic Incident Logic Engine
+  const analyzeIncident = (whereInput, whenInput, whatInput) => {
+    const text = (whatInput || '').toLowerCase();
+    
+    let calculatedRisk = 'MEDIUM';
+    let dynamicTimeline = {
+      criticalUntil: 'Next 0 to 3 Hours',
+      mediumUntil: '3 to 12 Hours',
+      normalBy: 'After 18 Hours'
+    };
+    let dynamicPrecautions = [];
 
-    const newResult = {
-      id: Date.now(),
-      where: searchWhere || 'Teesta Valley, Sikkim',
-      when: searchWhen || 'Today, 2:30 PM',
-      what: searchWhat || 'Landslide reported due to heavy rains',
-      riskLevel: (searchWhat.toLowerCase().includes('flood') || searchWhat.toLowerCase().includes('heavy') || searchWhat.toLowerCase().includes('block')) ? 'CRITICAL' : 'HIGH',
-      confidenceScore: '94.8%',
-      timeline: {
-        criticalUntil: 'Next 0 to 6 Hours (Immediate Threat Window)',
-        mediumUntil: '6 to 18 Hours (Stabilization Phase)',
+    // Critical condition matching
+    if (text.includes('block') || text.includes('landslide') || text.includes('flood') || text.includes('cloudburst') || text.includes('overflow')) {
+      calculatedRisk = 'CRITICAL';
+      dynamicTimeline = {
+        criticalUntil: 'Next 0 to 8 Hours (Immediate Active Hazard)',
+        mediumUntil: '8 to 24 Hours (Clearing & Stabilizing)',
+        normalBy: 'After 36 Hours (Full Operations)'
+      };
+    } else if (text.includes('rain') || text.includes('crack') || text.includes('mud') || text.includes('water')) {
+      calculatedRisk = 'HIGH';
+      dynamicTimeline = {
+        criticalUntil: 'Next 0 to 5 Hours (High Caution Required)',
+        mediumUntil: '5 to 16 Hours (Monitoring Phase)',
         normalBy: 'After 24 Hours (Expected Normalcy)'
-      },
-      precautions: [
-        'Immediate evacuation of residents from identified low-lying zones.',
-        'Total restriction of vehicular movement on affected highway corridors.',
-        'Deployment of emergency power backup and clean drinking water supplies.',
-        'Continuous monitoring of soil saturation and satellite rainfall feeds.'
-      ],
+      };
+    }
+
+    // Dynamic Precautions based on keywords
+    if (text.includes('block') || text.includes('landslide') || text.includes('road')) {
+      dynamicPrecautions = [
+        'Dispatch heavy earthmovers (JCB/Bulldozers) to clear highway debris.',
+        'Issue immediate traffic diversion advisory for all heavy & commercial vehicles.',
+        'Deploy Highway Patrol & BRO personnel to secure landslide periphery.',
+        'Set up emergency transit tents for stranded commuters.'
+      ];
+    } else if (text.includes('flood') || text.includes('overflow') || text.includes('water') || text.includes('river')) {
+      dynamicPrecautions = [
+        'Deploy NDRF inflatable rescue motorboats along low-lying riverbanks.',
+        'Issue high-decibel Siren Siren alarms for immediate local evacuation.',
+        'Distribute purified drinking water and emergency dry ration packets.',
+        'Establish elevated relief camps equipped with emergency medical kits.'
+      ];
+    } else {
+      dynamicPrecautions = [
+        'Maintain continuous satellite and ground sensor monitoring.',
+        'Alert local Disaster Response Force (SDRF) rapid deployment teams.',
+        'Keep emergency communication channels & VHF radios operational.',
+        'Advise citizens to restrict non-essential travel in the region.'
+      ];
+    }
+
+    return {
+      id: Date.now(),
+      where: whereInput || 'Teesta River Zone, Sikkim',
+      when: whenInput || 'Current Live Report',
+      what: whatInput || 'Road blockage and severe weather incident',
+      riskLevel: calculatedRisk,
+      timeline: dynamicTimeline,
+      precautions: dynamicPrecautions,
       timestamp: new Date().toLocaleTimeString()
     };
+  };
 
-    setParsedData(newResult);
-    setSearchHistory([newResult, ...searchHistory]);
+  const handleIncidentSearch = () => {
+    if (!searchWhere && !searchWhat) return;
+    const result = analyzeIncident(searchWhere, searchWhen, searchWhat);
+    setParsedData(result);
+    setSearchHistory([result, ...searchHistory]);
+  };
+
+  // Quick Demo Auto-Fill Handlers
+  const loadQuickScenario = (whereVal, whenVal, whatVal) => {
+    setSearchWhere(whereVal);
+    setSearchWhen(whenVal);
+    setSearchWhat(whatVal);
+    const result = analyzeIncident(whereVal, whenVal, whatVal);
+    setParsedData(result);
+    setSearchHistory([result, ...searchHistory]);
   };
 
   const handleDispatch = (e) => {
@@ -86,7 +139,6 @@ export default function App() {
     return '#16a34a';                          // Green
   };
 
-  // PROPER THEORY DOCUMENT REPORT GENERATOR
   const downloadTextReport = () => {
     const timestamp = new Date().toLocaleString();
     
@@ -147,11 +199,6 @@ PRIMARY CONTACT HELPLINES:
   - NDRF Control Room           : 011-24363260 / +91-9711077372
   - State Disaster Response     : 1070 / 1077
   - Emergency Central Helpline  : 112
-
-OPERATIONAL PRECAUTIONS:
-  1. Maintain immediate geo-fenced communication alerts in CRITICAL zones.
-  2. Clear state highways for emergency search-and-rescue vehicle movements.
-  3. Prepare NDRF relief stations with medical kits and ration supplies.
 
 ================================================================================
                              END OF OFFICIAL ADVISORY
@@ -250,6 +297,31 @@ OPERATIONAL PRECAUTIONS:
             <h3>🔍 Search Public Incident & Disaster Reports</h3>
             <p style={styles.desc}>Search or input specific news/social reports by location, time, and incident details.</p>
 
+            {/* DEMO AUTO-FILL BUTTONS */}
+            <div style={{ marginBottom: '16px', padding: '10px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155' }}>
+              <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>⚡ Quick Demo Scenarios (One-Click Auto Fill):</span>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button 
+                  style={styles.demoBtn} 
+                  onClick={() => loadQuickScenario('Teesta River Highway, Sikkim', '5:00 PM Today', 'Heavy rockfall & landslide causing total road block')}
+                >
+                  🚧 Landslide Roadblock
+                </button>
+                <button 
+                  style={styles.demoBtn} 
+                  onClick={() => loadQuickScenario('Guwahati Zoo Road, Assam', '3:30 PM Today', 'Continuous heavy rainfall causing urban flash flood and waterlogging')}
+                >
+                  🌊 Urban Flash Flood
+                </button>
+                <button 
+                  style={styles.demoBtn} 
+                  onClick={() => loadQuickScenario('Imphal West Highway, Manipur', '12:00 PM Today', 'River embankment overflow threatening nearby residential colonies')}
+                >
+                  🏠 River Overflow
+                </button>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
                 <label style={styles.label}>📍 Where (Region / Location):</label>
@@ -308,7 +380,7 @@ OPERATIONAL PRECAUTIONS:
                 <h4>🛡️ Recommended Safety & Evacuation Precautions:</h4>
                 <ul style={{ paddingLeft: '20px', color: '#38bdf8', fontSize: '13px' }}>
                   {parsedData.precautions.map((p, idx) => (
-                    <li key={idx}>{p}</li>
+                    <li key={idx} style={{ marginBottom: '4px' }}>{p}</li>
                   ))}
                 </ul>
               </div>
@@ -337,7 +409,13 @@ OPERATIONAL PRECAUTIONS:
                 <select 
                   style={{ ...styles.inputStyle, cursor: 'pointer' }} 
                   value={selectedRiskType} 
-                  onChange={(e) => setSelectedRiskType(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedRiskType(val);
+                    if (val.includes('Flood')) setCustomMsg('URGENT: Flash flood warning issued for riverbank zones. Move to higher ground immediately.');
+                    else if (val.includes('Landslide')) setCustomMsg('ALERT: Landslide roadblock reported on main highway corridor. Avoid travelling until further notice.');
+                    else setCustomMsg('EMERGENCY: Severe weather advisory in effect. Follow safety instructions from local authorities.');
+                  }}
                 >
                   <option>Flood & Submergence Alert</option>
                   <option>Landslide & Highway Blockage</option>
@@ -406,7 +484,7 @@ OPERATIONAL PRECAUTIONS:
               <div style={styles.chartBarGroup}>
                 <div style={{ fontSize: '12px', width: '120px' }}>Teesta Valley</div>
                 <div style={styles.barBackground}>
-                  <div style={{ ...styles.barFill, width: '90%', backgroundColor: '#dc2626' }}>Critical (0 - 6 Hours)</div>
+                  <div style={{ ...styles.barFill, width: '90%', backgroundColor: '#dc2626' }}>Critical (0 - 8 Hours)</div>
                 </div>
               </div>
 
@@ -468,6 +546,7 @@ const styles = {
   desc: { color: '#94a3b8', marginBottom: '16px', fontSize: '14px' },
   inputStyle: { width: '100%', padding: '10px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' },
   nlpBtn: { marginTop: '8px', padding: '10px 20px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
+  demoBtn: { padding: '6px 12px', backgroundColor: '#1e293b', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' },
   parsedResult: { marginTop: '20px', padding: '16px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #0284c7' },
   dispatchBtn: { padding: '12px 24px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
   downloadBtn: { padding: '12px 24px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
